@@ -26,10 +26,10 @@ class DatabaseSeeder extends Seeder
             'name' => 'pegawai'
 
         ]);
-        Role::create([
-            'name' => 'kasir'
+        // Role::create([
+        //     'name' => 'kasir'
 
-        ]);
+        // ]);
         $pemilik = User::create([
             'name' => 'Kepala Desa',
             'email' => 'kepaladesa@gmail.com',

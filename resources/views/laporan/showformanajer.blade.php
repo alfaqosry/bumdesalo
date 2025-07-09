@@ -1,6 +1,12 @@
 <x-layout>
     <div class="container-fluid py-4">
-<h4>Laporan {{$toko->nama_cabang}}</h4>
+        <h4>Laporan Penjualan</h4>
+        @if ($from && $to)
+            <p>Periode: {{ \Carbon\Carbon::parse($from)->translatedFormat('d F Y') }} -
+                {{ \Carbon\Carbon::parse($to)->translatedFormat('d F Y') }}</p>
+        @else
+            <p>Periode: Semua Data</p>
+        @endif
         <div class="row mb-4">
             <div class="col-xl-6 col-sm-6 mb-xl-0 mb-4">
                 <div class="card">
@@ -81,7 +87,8 @@
                         <div class="row">
                             <div class="col-8">
                                 <div class="numbers">
-                                    <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Pengeluaran Bulan Ini</p>
+                                    <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Pengeluaran Bulan Ini
+                                    </p>
                                     <h5 class="font-weight-bolder mb-0">
                                         @rupiah($pengeluaranbulanini)
 
@@ -125,12 +132,33 @@
                         <div class="tab-pane fade show active" id="penjualan" role="tabpanel"
                             aria-labelledby="penjualan-tab">
                             <div class="row mt-2">
-                               
-        
-                                <div class="col-4 text-start">
+
+                                <form id="filterForm" method="GET" class="row g-3 mb-4">
+                                    <div class="col-md-4">
+                                        <label for="from_date" class="form-label">Dari Tanggal</label>
+                                        <input type="date" name="from_date" id="from_date" class="form-control"
+                                            value="{{ request('from_date') }}">
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label for="to_date" class="form-label">Sampai Tanggal</label>
+                                        <input type="date" name="to_date" id="to_date" class="form-control"
+                                            value="{{ request('to_date') }}">
+                                    </div>
+
+                                    <div class="col-md-4 d-flex align-items-end gap-2">
+                                        <button type="button" class="btn btn-primary"
+                                            onclick="submitForm('view')">Tampilkan</button>
+                                        <button type="button" class="btn btn-danger" onclick="submitForm('pdf')">
+                                            <i class="fas fa-file-pdf"></i> Export PDF
+                                        </button>
+                                    </div>
+                                </form>
+
+                                {{-- <div class="col-4 text-start">
                                     <a class="btn bg-gradient-dark mb-0" href="{{ route('laporan.exportpdf') }}"><i
                                             class="fas fa-plus" aria-hidden="true"></i>Cetak</a>
-                                </div>
+                                </div> --}}
                             </div>
                             <table class="table table-striped" id="datatable">
                                 <thead>
@@ -163,7 +191,8 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="tab-pane fade" id="pengeluaran" role="tabpanel" aria-labelledby="pengeluaran-tab">
+                        <div class="tab-pane fade" id="pengeluaran" role="tabpanel"
+                            aria-labelledby="pengeluaran-tab">
                             <table class="table table-striped" id="datatable">
                                 <thead>
                                     <tr>
@@ -193,13 +222,14 @@
                                     @endforeach
                                 </tbody>
                             </table>
-                        
-                        
-                        
-                        
-                        
+
+
+
+
+
                         </div>
-                        <div class="tab-pane fade" id="rekap" role="tabpanel" aria-labelledby="rekap-tab">...</div>
+                        <div class="tab-pane fade" id="rekap" role="tabpanel" aria-labelledby="rekap-tab">...
+                        </div>
                     </div>
 
 
@@ -212,7 +242,8 @@
                         </div>
                         <div class="tab-pane fade" id="pills-pengeluaran" role="tabpanel"
                             aria-labelledby="pills-pengeluaran-tab">...</div>
-                        <div class="tab-pane fade" id="pills-rekap" role="tabpanel" aria-labelledby="pills-rekap-tab">
+                        <div class="tab-pane fade" id="pills-rekap" role="tabpanel"
+                            aria-labelledby="pills-rekap-tab">
                             ...</div>
                     </div>
 
@@ -230,5 +261,19 @@
     <script>
         new DataTable('#datatable');
     </script>
+    <script>
+        function submitForm(action) {
+            const form = document.getElementById('filterForm');
+
+            if (action === 'pdf') {
+                form.action = "{{ route('laporan.exportpdf') }}";
+            } else {
+                form.action = "{{ route('laporan.laporanformanajer') }}";
+            }
+
+            form.submit();
+        }
+    </script>
+
 
 </x-layout>

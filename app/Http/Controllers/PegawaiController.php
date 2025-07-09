@@ -19,18 +19,7 @@ class PegawaiController extends Controller
      */
     public function index()
     {
-        $userlogin = Auth::user();
-
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
-
-
-
-
-       
-            $user = User::all();
-      
-
-
+        $user = User::all();
         return view('pegawai.index', [
 
             'pegawai' => $user
@@ -42,7 +31,7 @@ class PegawaiController extends Controller
      */
     public function create()
     {
-       
+
         return view('pegawai.create');
     }
 
@@ -55,31 +44,27 @@ class PegawaiController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'role' => 'required|exists:roles,name',
+            'password' => 'required|string|min:8|confirmed',
+            'phone_number' => 'nullable|string|max:20|regex:/^[0-9+\-\s()]*$/',
+            'alamat' => 'nullable|string|max:255',
+            'tanggal_lahir' => 'nullable|date|before:today',
+            'tanggal_rekrut' => 'nullable|date|before_or_equal:today',
+
         ]);
-        $userlogin = Auth::user();
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'phone_number' => $request->phone_number,
+            'alamat' => $request->alamat,
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'tanggal_rekrut' => $request->tanggal_rekrut,
         ]);
-        if ($userlogin->hasRole('pemilik')) {
-            $pegawaitoko = Pegawaitoko::create([
-                'user_id' => $user->id,
-                'cabangtoko_id' => $request->penempatan,
-                'jabatan' => $request->role,
-            ]);
-        } elseif ($userlogin->hasRole('manajer')) {
-            $toko_id = Pegawaitoko::where('user_id', $userlogin->id)->first();
-            $pegawaitoko = Pegawaitoko::create([
-                'user_id' => $user->id,
-                'cabangtoko_id' => $toko_id->cabangtoko_id,
-                'jabatan' => $request->role,
-            ]);
-        }
-        $user->assignRole($request->role);
+
+
+
+        $user->assignRole("pegawai");
 
 
         return redirect()->route('pegawai.index')->with('success', 'Pegawai berhasil ditambahkan');
@@ -98,11 +83,10 @@ class PegawaiController extends Controller
      */
     public function edit(string $id)
     {
-        $user = User::find($id);
-        $pegawaitoko = Pegawaitoko::where('user_id', $id)->first();
-        $toko = Cabangtoko::all();
+        $pegawai = User::find($id);
 
-        return view('pegawai.edit', compact('pegawaitoko', 'user', 'toko'));
+
+        return view('pegawai.edit', compact( 'pegawai'));
     }
 
     /**
@@ -110,57 +94,35 @@ class PegawaiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // Validasi input
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'nullable|string|min:8',
-            'role' => 'required|exists:roles,name',
-            'penempatan' => 'nullable',
+            'phone_number' => 'nullable|string|max:20|regex:/^[0-9+\-\s()]*$/',
+            'alamat' => 'nullable|string|max:255',
+            'tanggal_lahir' => 'nullable|date|before:today',
+            'tanggal_rekrut' => 'nullable|date|before_or_equal:today',
         ]);
 
-        // Ambil user yang akan diupdate
         $user = User::findOrFail($id);
 
-        // Update data user
-        $user->name = $request->name;
-        $user->email = $request->email;
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'alamat' => $request->alamat,
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'tanggal_rekrut' => $request->tanggal_rekrut,
+        ]);
 
-        // Update password jika ada
-        if ($request->password) {
-            $user->password = Hash::make($request->password);
-        }
-
-        // Simpan perubahan data user
-        $user->save();
-
-        // Ambil data user yang sedang login
-        $userlogin = Auth::user();
-
-        // Update data pegawai toko berdasarkan role yang login
-        if ($userlogin->hasRole('pemilik')) {
-            // Jika role pemilik, maka penempatan dan jabatan mengikuti input
-            $pegawaitoko = Pegawaitoko::where('user_id', $user->id)->first();
-            $pegawaitoko->update([
-                'cabangtoko_id' => $request->penempatan,
-                'jabatan' => $request->role,
-            ]);
-        } elseif ($userlogin->hasRole('manajer')) {
-            // Jika role manajer, penempatan mengikuti cabang toko dari user yang login
-            $toko_id = Pegawaitoko::where('user_id', $userlogin->id)->first();
-            $pegawaitoko = Pegawaitoko::where('user_id', $user->id)->first();
-
-            $pegawaitoko->update([
-                'cabangtoko_id' => $toko_id->cabangtoko_id,
-                'jabatan' => $request->role,
+        // Update password hanya jika diisi
+        if ($request->filled('password')) {
+            $user->update([
+                'password' => Hash::make($request->password),
             ]);
         }
 
-        // Update atau assign ulang role
-        // Jika role berubah, hapus role lama dan assign role baru
-        $user->syncRoles($request->role);
 
-        // Redirect ke halaman pegawai dengan pesan sukses
         return redirect()->route('pegawai.index')->with('success', 'Pegawai berhasil diupdate');
     }
 
@@ -170,21 +132,9 @@ class PegawaiController extends Controller
     public function destroy(string $id)
     {
 
-        // Temukan user berdasarkan ID
         $user = User::findOrFail($id);
-
-
-        $pegawaitoko = Pegawaitoko::where('user_id', $user->id)->first();
-        if ($pegawaitoko) {
-            $pegawaitoko->delete();
-        }
-
-      
-        $user->removeRole($user->getRoleNames()[0]);
-
-
         $user->delete();
 
-        return redirect()->route('pegawai.index')->with('success', 'Pegawai berhasil Hapus');
+        return redirect()->back()->with('success', 'Data user berhasil dihapus.');
     }
 }

@@ -14,13 +14,8 @@ class BarangController extends Controller
      */
     public function index()
     {
-        $user = User::find(auth()->user()->id)->cabangtokos()->first();
-
-        if($user == null){
-
-            abort(404, 'Ada kesalahan anda tidak terdaftar di toko manapun!');
-        }
-        $barang = Barang::where('cabangtoko_id', $user->id)->get();
+    
+        $barang = Barang::all();
         return view('barang.index', compact('barang'));
     }
 
@@ -45,9 +40,6 @@ class BarangController extends Controller
             'kadarluarsa_barang' => 'required'
         ]);
 
-        
-        $cabang = User::find(auth()->user()->id)->cabangtokos()->first();
-
 
         $barang = Barang::create([
             "nama_barang" => $request->nama_barang, 
@@ -55,7 +47,7 @@ class BarangController extends Controller
             "harga_barang" => $request->harga_barang, 
             "kode_barang" => $request->kode_barang ,
             "kadarluarsa_barang" => $request->kadarluarsa_barang ,
-            "cabangtoko_id" => $cabang->id
+
         
         ]);
         return redirect()->route('barang.index')->with('sukses', 'Barang berhasil ditambahkan.');

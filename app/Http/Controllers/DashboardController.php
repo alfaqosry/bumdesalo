@@ -22,15 +22,9 @@ class DashboardController extends Controller
     public function index()
     {
         $userlogin = Auth::user();
-        $pegawaitoko = Pegawaitoko::where('user_id', Auth()->user()->id)->first();
-        $totaltoko = "11";
         $totalpegawai = User::count();
+        $totalpenjualan = Penjualan::count();
 
-        if ($userlogin->hasRole('kepaladesa')) {
-            $totalpenjualan = Penjualan::count();
-        } else {
-            $totalpenjualan = Penjualan::count();
-        }
 
 
 
@@ -71,7 +65,7 @@ class DashboardController extends Controller
         return view(
             'dashboard.index',
             [
-                'totaltoko' => $totaltoko,
+               
                 'totalpegawai' => $totalpegawai,
                 'totalpenjualan' => $totalpenjualan,
                 'penjualanArr' => Grafik::get_grafik($penjualans),

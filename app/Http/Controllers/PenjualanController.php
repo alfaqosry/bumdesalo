@@ -74,14 +74,14 @@ class PenjualanController extends Controller
         ]);
 
         $sisastok =  $barang->stok_barang - $request->kuantitas;
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
+     
         $penjualan = Penjualan::create([
             "barang_id" => $request->barang_id,
             "harga" => $barang->harga_barang,
             "sisa_stok" => $sisastok,
             "kuantitas" => $request->kuantitas,
             "kasir_id" => auth()->user()->id,
-            "toko_id" => $toko_id->cabangtoko_id
+            
         ]);
 
 
@@ -121,14 +121,12 @@ class PenjualanController extends Controller
         ]);
         $barang = Barang::findOrFail($request->barang_id);
         $sisastok =  $barang->stok_barang - $request->kuantitas;
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
         $penjualan->update([
             "barang_id" => $request->barang_id,
             "harga" => $barang->harga_barang,
             "sisa_stok" => $sisastok,
             "kuantitas" => $request->kuantitas,
             "kasir_id" => auth()->user()->id,
-            "toko_id" => $toko_id->cabangtoko_id
         ]);
 
         return redirect()->route('penjualan.index')->with('sukses', 'Penjualan berhasil diperbarui.');

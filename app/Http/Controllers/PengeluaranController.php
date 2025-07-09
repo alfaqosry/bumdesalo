@@ -15,11 +15,11 @@ class PengeluaranController extends Controller
      */
     public function index()
     {
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
-        $totalhariini = Pengeluaran::where('toko_id', $toko_id->cabangtoko_id)->whereDate('created_at', Carbon::today())->select(DB::raw('sum(harga * kuantitas_pengeluaran) as total'))->first();
-        $totalpengeluaran = Pengeluaran::where('toko_id', $toko_id->cabangtoko_id)->select(DB::raw('sum(harga * kuantitas_pengeluaran) as total'))->first();
+  
+        $totalhariini = Pengeluaran::whereDate('created_at', Carbon::today())->select(DB::raw('sum(harga * kuantitas_pengeluaran) as total'))->first();
+        $totalpengeluaran = Pengeluaran::select(DB::raw('sum(harga * kuantitas_pengeluaran) as total'))->first();
 
-        $pengeluaran = Pengeluaran::where('toko_id', $toko_id->cabangtoko_id)->with('pegawai')->latest()->get();
+        $pengeluaran = Pengeluaran::with('pegawai')->latest()->get();
         return view('pengeluaran.index', [
             'pengeluaran' => $pengeluaran,
             'totalpengeluaran' => $totalpengeluaran,
@@ -52,13 +52,13 @@ class PengeluaranController extends Controller
         ]);
 
 
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
+       
         $pengeluaran = Pengeluaran::create([
             "nama_pengeluaran" => $request->nama_pengeluaran,
             "harga" => $request->harga,
             "kuantitas_pengeluaran" => $request->kuantitas_pengeluaran,
             "pegawai_id" => auth()->user()->id,
-            "toko_id" => $toko_id->cabangtoko_id
+           
         ]);
 
 

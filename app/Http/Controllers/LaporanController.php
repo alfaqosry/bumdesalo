@@ -11,6 +11,7 @@ use App\Models\Pengeluaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\User;
 
 class LaporanController extends Controller
 {
@@ -27,67 +28,91 @@ class LaporanController extends Controller
         return view('laporan.index', ['daftartoko' => $daftartoko]);
     }
 
-    public function laporanformanajer()
+    public function laporanformanajer(Request $request)
     {
 
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
-        $penjualan = Penjualan::join(
-            'barangs',
-            'penjualans.barang_id',
-            '=',
-            'barangs.id'
-        )->join(
-            'users',
-            'penjualans.kasir_id',
-            '=',
-            'users.id'
-        )->select('barangs.*', 'penjualans.kuantitas', 'penjualans.harga', 'penjualans.sisa_stok', 'users.name', 'penjualans.created_at as tanggal')
-            ->where('penjualans.toko_id', $toko_id->cabangtoko_id)
-            ->latest()
-            ->get();
+        $from = $request->from_date;
+        $to = $request->to_date;
 
+        // Query penjualan
+        $penjualanQuery = Penjualan::join('barangs', 'penjualans.barang_id', '=', 'barangs.id')
+            ->join('users', 'penjualans.kasir_id', '=', 'users.id')
+            ->select(
+                'barangs.*',
+                'penjualans.kuantitas',
+                'penjualans.harga',
+                'penjualans.sisa_stok',
+                'users.name',
+                'penjualans.created_at as tanggal'
+            );
 
+        if ($from && $to) {
+            $penjualanQuery->whereBetween('penjualans.created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay()
+            ]);
+        }
 
-        $pengeluaran = Pengeluaran::where('toko_id', $toko_id->cabangtoko_id)->latest()
-            ->get();
+        $penjualan = $penjualanQuery->latest()->get();
 
-        $totalPengeluaranHariIni = Pengeluaran::where('toko_id', $toko_id->cabangtoko_id)
-            ->whereDate('created_at', Carbon::today()) // Filter untuk hari ini
+        // Query pengeluaran
+        $pengeluaranQuery = Pengeluaran::query();
+        if ($from && $to) {
+            $pengeluaranQuery->whereBetween('created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay()
+            ]);
+        }
+        $pengeluaran = $pengeluaranQuery->latest()->get();
+
+        // Total pendapatan
+        $totalPendapatanQuery = Penjualan::join('barangs', 'penjualans.barang_id', '=', 'barangs.id');
+        if ($from && $to) {
+            $totalPendapatanQuery->whereBetween('penjualans.created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay()
+            ]);
+        }
+        $totalpendapatan = $totalPendapatanQuery
+            ->select(DB::raw('sum(barangs.harga_barang * penjualans.kuantitas) as total'))
+            ->first();
+
+        // Total pengeluaran (yang difilter)
+        $totalpengeluaran = $pengeluaran->sum(function ($p) {
+            return $p->harga * $p->kuantitas_pengeluaran;
+        });
+
+        // Pengeluaran hari ini (tetap tanpa filter)
+        $totalPengeluaranHariIni = Pengeluaran::whereDate('created_at', Carbon::today())
             ->get()
             ->sum(function ($pengeluaran) {
                 return $pengeluaran->harga * $pengeluaran->kuantitas_pengeluaran;
             });
 
-        $totalPengeluaranBulanIni = Pengeluaran::where('toko_id', $toko_id->cabangtoko_id)
-            ->whereMonth('created_at', Carbon::now()->month) // Filter bulan saat ini
-            ->whereYear('created_at', Carbon::now()->year)   // Filter tahun saat ini
+        // Pengeluaran bulan ini (tetap tanpa filter)
+        $totalPengeluaranBulanIni = Pengeluaran::whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
             ->get()
             ->sum(function ($pengeluaran) {
                 return $pengeluaran->harga * $pengeluaran->kuantitas_pengeluaran;
             });
 
-        $penjualanhariini = Penjualan::join(
-            'barangs',
-            'penjualans.barang_id',
-            '=',
-            'barangs.id'
-        )->where('penjualans.toko_id', $toko_id->cabangtoko_id)->whereDate('penjualans.created_at', Carbon::today())->select(DB::raw('sum(barangs.harga_barang * penjualans.kuantitas) as total'))->first();
-        $totalpendapatan = Penjualan::join(
-            'barangs',
-            'penjualans.barang_id',
-            '=',
-            'barangs.id'
-        )->where('penjualans.toko_id', $toko_id->cabangtoko_id)->select(DB::raw('sum(barangs.harga_barang * penjualans.kuantitas) as total'))->first();
+        // Penjualan hari ini (tanpa filter)
+        $penjualanhariini = Penjualan::join('barangs', 'penjualans.barang_id', '=', 'barangs.id')
+            ->whereDate('penjualans.created_at', Carbon::today())
+            ->select(DB::raw('sum(barangs.harga_barang * penjualans.kuantitas) as total'))
+            ->first();
 
-        $toko = Cabangtoko::find($toko_id->cabangtoko_id);
         return view('laporan.showformanajer', [
             'penjualan' => $penjualan,
-            'penjualanhariini' => $penjualanhariini,
+            'pengeluaran' => $pengeluaran,
             'totalpendapatan' => $totalpendapatan,
-            'toko' => $toko,
-            'pengeluaran' =>  $pengeluaran,
+            'totalpengeluaran' => $totalpengeluaran,
+            'penjualanhariini' => $penjualanhariini,
             'totalpengeluaranhariini' => $totalPengeluaranHariIni,
-            'pengeluaranbulanini' => $totalPengeluaranBulanIni
+            'pengeluaranbulanini' => $totalPengeluaranBulanIni,
+            'from' => $from,
+            'to' => $to
         ]);
     }
 
@@ -214,29 +239,51 @@ class LaporanController extends Controller
         //
     }
 
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $toko_id = Pegawaitoko::where('user_id', auth()->user()->id)->first();
-        $penjualan = Penjualan::join(
-            'barangs',
-            'penjualans.barang_id',
-            '=',
-            'barangs.id'
-        )->join(
-            'users',
-            'penjualans.kasir_id',
-            '=',
-            'users.id'
-        )->select('barangs.*', 'penjualans.kuantitas', 'penjualans.harga', 'penjualans.sisa_stok', 'users.name', 'penjualans.created_at as tanggal')
-            ->where('penjualans.toko_id', $toko_id->cabangtoko_id)
-            ->latest()
-            ->get();
 
-        // Load view untuk PDF
-        $pdf = Pdf::loadView('penjualan.export', compact('penjualan'));
+        $from = $request->from_date;
+        $to = $request->to_date;
 
-        // Return sebagai download file PDF
+        $penjualan = Penjualan::join('barangs', 'penjualans.barang_id', '=', 'barangs.id')
+            ->join('users', 'penjualans.kasir_id', '=', 'users.id')
+            ->select(
+                'barangs.*',
+                'penjualans.kuantitas',
+                'penjualans.harga',
+                'penjualans.sisa_stok',
+                'users.name',
+                'penjualans.created_at as tanggal'
+            );
+
+        if ($from && $to) {
+            $penjualan->whereBetween('penjualans.created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay()
+            ]);
+        }
+
+        $data = $penjualan->orderBy('penjualans.created_at', 'desc')->get();
+
+        $totalPenjualan = $data->sum(fn($item) => $item->harga * $item->kuantitas);
+
+        // Format tanggal periode untuk ditampilkan
+        $periode = $from && $to
+            ? Carbon::parse($from)->translatedFormat('d F Y') . ' - ' . Carbon::parse($to)->translatedFormat('d F Y')
+            : 'Semua Periode';
+
+        $tanggalSekarang = Carbon::now()->translatedFormat('d F Y');
+        $kepaladesa = User::Find(Auth()->user()->id);
+        // Generate PDF
+        $pdf = Pdf::loadView('penjualan.export', [
+            'penjualan' => $data,
+            'totalPenjualan' => $totalPenjualan,
+            'tanggalSekarang' => $tanggalSekarang,
+            'periode' => $periode,
+            'kepaladesa' => $kepaladesa
+        ]);
+
+
         return $pdf->download('laporan_penjualan.pdf');
     }
-
 }

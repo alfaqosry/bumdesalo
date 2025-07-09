@@ -25,28 +25,41 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label ">No Telepon</label>
+                            <input type="text" class="form-control @error('phone_number') is-invalid @enderror"
+                                id="phone_number" name="phone_number">
+                            @error('phone_number')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
+                            <input type="date" class="form-control @error('tanggal_lahir') is-invalid @enderror"
+                                id="tanggal_lahir" name="tanggal_lahir">
+                            @error('tanggal_lahir')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="tanggal_rekrut" class="form-label ">Tanggal Rekrut</label>
+                            <input type="date" class="form-control @error('tanggal_rekrut') is-invalid @enderror"
+                                id="tanggal_rekrut" name="tanggal_rekrut">
+                            @error('tanggal_rekrut')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     
                         <div class="mb-3">
-                            <label for="role">Jabatan</label>
-                            @role('pemilik')
-                                <select class="form-control" id="role" name="role">
-                                    <!-- <option value="pemilik">Pemilik</option> -->
-                                    <!-- <option value="manajer">Manajer</option> -->
-                                    <option value="kasir">Kasir</option>
-                                    <option value="pegawai">Pegawai</option>
-
-                                </select>
-                            @endrole
-                            @role('manajer')
-                                <select class="form-control" id="role" name="role">
-
-                                    <option value="kasir">Kasir</option>
-                                    <option value="pegawai">Pegawai</option>
-
-                                </select>
-                            @endrole
-
+                            <label for="alamat" class="form-label ">Alamat</label>
+                            <input type="text" class="form-control @error('alamat') is-invalid @enderror"
+                                id="alamat" name="alamat">
+                            @error('alamat')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
+                    
 
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
@@ -56,7 +69,16 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-
+                        
+                        <div class="mb-3">
+                            <label for="password_confirmation" class="form-label">Konfirmasi Password</label>
+                            <input type="password" class="form-control @error('password_confirmation') is-invalid @enderror"
+                                id="password_confirmation" name="password_confirmation">
+                            @error('password_confirmation')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
 
 
 
