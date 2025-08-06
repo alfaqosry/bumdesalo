@@ -273,7 +273,7 @@ class LaporanController extends Controller
             : 'Semua Periode';
 
         $tanggalSekarang = Carbon::now()->translatedFormat('d F Y');
-        $kepaladesa = User::Find(Auth()->user()->id);
+        $kepaladesa = User::role('kepaladesa')->first();
         // Generate PDF
         $pdf = Pdf::loadView('penjualan.export', [
             'penjualan' => $data,
